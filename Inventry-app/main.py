@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from models import Product
-
+from database import SessionLocal, engine
+from database_models import Base
 
 app = FastAPI()
 
+# Create tables in the database
+Base.metadata.create_all(bind=engine)
 @app.get("/")
 def greet():
     return "welcome to invebtry app"
@@ -24,6 +27,9 @@ products = [
 
 @app.get("/products")
 def get_all_product():
+    #connect db
+    db = SessionLocal()
+    db.query()
     return products
 
 @app.get("/products/{product_id}")
@@ -41,6 +47,38 @@ def add_product(product:Product):
         "product": product,
         "total_products": len(products)
     }
-              
+
+@app.put("/products/{product_id}")
+def update_product(product_id:int,product:Product):
+    for i in range(len(products)):
+        if products[i].id == product_id:
+            products[i]= product
+            return {
+                "message": "Product updated successfully",
+                "product": product,
+            }
+                
+    return "no product found with this id"       
+    
+# @app.delete("/products/{product_id}")  
+# def delete_product(product_id:int):
+#     for i in range(len(products)):
+#         if products[i].id == product_id:
+#             # del products[i]
+#             products.pop(i)
+#             return {
+#                 "message": "Product deleted successfully",
+#             }
+#     return { "error": "No product found with this id" }      
+
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int):
+    for index, product in enumerate(products):
+        if product.id == product_id:
+            products.pop(index)
+            return { "message": "Product deleted successfully" }
+
+    return { "error": "No product found with this id" }
+
              
 
