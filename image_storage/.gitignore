@@ -1,0 +1,13 @@
+.env
+.venv/
+uv.lock
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.python-version
+*.log
+.vscode/
+.idea/
+app/__pycache__/

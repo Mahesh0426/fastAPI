@@ -1,0 +1,14 @@
+[project]
+name = "image-storage"
+version = "0.1.0"
+description = "A simple image storage library."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "fastapi>=0.136.1",
+    "fastapi-users[sqlalchemy]>=15.0.5",
+    "imagekitio>=5.4.0",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.46.0",
+]
