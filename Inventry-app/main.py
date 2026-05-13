@@ -1,5 +1,6 @@
 import database_models
 from fastapi import Depends ,FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from models import Product
 from database import SessionLocal, engine
 from database_models import Base
@@ -7,13 +8,20 @@ from database_models import Base
 from sqlalchemy.orm import Session
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], 
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    allow_credentials=True,
+    )
 
 # Create tables in the database
 Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def greet():
-    return "welcome to invebtry app"
+    return "welcome to inventry app"
 
 products = [
     Product(id=1,name="phone",price=100,quantity=10,description="Smart phone"),
@@ -84,6 +92,7 @@ def add_product(product:Product,db:Session = Depends(get_db)):
 # update products
 @app.put("/products/{product_id}")
 def update_product(product_id:int,product:Product,db:Session = Depends(get_db)):
+    #get the product from the database first
     update_product = db.query(database_models.Product).filter(database_models.Product.id == product_id).first()
     if not update_product:
         return {"error": "Product not found"}
@@ -110,13 +119,17 @@ def update_product(product_id:int,product:Product,db:Session = Depends(get_db)):
 #     return { "error": "No product found with this id" }      
 
 @app.delete("/products/{product_id}")
-def delete_product(product_id: int):
-    for index, product in enumerate(products):
-        if product.id == product_id:
-            products.pop(index)
-            return { "message": "Product deleted successfully" }
-
-    return { "error": "No product found with this id" }
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    #get the product from the database first
+    product = db.query(database_models.Product).filter(database_models.Product.id == product_id).first()
+    if not product:
+        return {"error": "Product not found"}
+    db.delete(product)
+    db.commit()
+    return {
+        "message": "Product deleted successfully",
+    }
+    
 
              
 
