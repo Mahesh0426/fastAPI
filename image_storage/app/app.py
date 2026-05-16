@@ -10,6 +10,8 @@ import os
 import uuid
 import tempfile
 from app.users import current_active_user, auth_backend, fastapi_users
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Initialize ImageKit
 
@@ -21,6 +23,15 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], 
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    allow_credentials=True,
+    )
+
 
 # Include the authentication routes provided by FastAPI Users
 app.include_router(
@@ -120,14 +131,18 @@ async def get_feed(
     user: User = Depends(current_active_user)
     ):
 
-        result = await session.execute(select(Post).order_by(Post.created_at.desc()))
+        result = await session.execute(
+            select(Post).where(Post.user_id == user.id).order_by(Post.created_at.desc())
+        )
         posts = [row[0] for row in result.all()]
-
-        user_results = await session.execute(select(User).where(User.id.in_([post.user_id for post in posts])))
-        users = {user.id: user for user in user_results.scalars().all()}
 
         post_data = []
         for post in posts:
+            # created_at is stored as naive UTC; append 'Z' so the browser parses it as UTC
+            created_at_iso = post.created_at.isoformat()
+            if not created_at_iso.endswith("Z") and "+" not in created_at_iso:
+                created_at_iso += "Z"
+
             post_data.append({
                 "id": str(post.id),
                 "user_id": str(post.user_id),
@@ -135,9 +150,9 @@ async def get_feed(
                 "url": post.url,
                 "file_type": post.file_type,
                 "file_name": post.file_name,
-                "created_at": post.created_at.isoformat(),
-                "is_owner": post.user_id == user.id,
-                "email": post.user.email if post.user else "Unknown"
+                "created_at": created_at_iso,
+                "is_owner": True,
+                "email": user.email,
             })
         return {"posts": post_data}
 
